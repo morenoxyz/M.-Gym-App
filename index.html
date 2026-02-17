@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moreno‘s Workout App</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🏋️</text></svg>">
+<style>
+body { font-family: Arial, sans-serif; background:#121212; color:#FFD700; padding:15px; }
+h1, h2 { text-align:center; color:#FFD700; }
+.card { background:#1e1e1e; padding:12px; margin-bottom:10px; border-radius:8px; }
+input { width:60px; padding:4px; margin:3px; border-radius:4px; border:none; }
+button { padding:8px 12px; margin-top:10px; background:#FFD700; border:none; color:#121212; font-weight:bold; border-radius:6px; cursor:pointer;}
+button:hover { opacity:0.85; }
+.exercise-title { font-weight:bold; margin-bottom:5px; }
+small { color:#ccc; display:block; margin-bottom:5px; }
+.day-select { text-align:center; margin-bottom:10px; }
+.satz { display:inline-block; padding:3px 6px; margin:2px; border-radius:4px; min-width:40px; text-align:center;}
+.satz.gruen { background-color: #28a745; color:#fff; }
+.satz.gelb { background-color: #ffc107; color:#000; }
+.satz.rot { background-color: #dc3545; color:#fff; }
+</style>
+</head>
+<body>
+
+<h1>Moreno‘s Workout App 🏋️</h1>
+
+<div class="day-select">
+<label>Trainingstag: </label>
+<select id="day">
+<option value="Montag">Montag</option>
+<option value="Mittwoch">Mittwoch</option>
+<option value="Freitag">Freitag</option>
+</select>
+</div>
+
+<div id="exercises"></div>
+
+<button onclick="saveWorkout()">Training speichern</button>
+
+<h2>📅 Letzte Trainings</h2>
+<div id="history"></div>
+
+<script>
+// Trainingsplan
+const plan = {
+"Montag":[
+  {name:"Back Squat", sets:5, reps:"3–5", tempo:"explosiv hoch, 3 Sek runter", note:"Kraftfokus, progressive Steigerung"},
+  {name:"Romanian Deadlift", sets:3, reps:"6–8", tempo:"", note:"-"},
+  {name:"Bulgarian Split Squat", sets:3, reps:"8–10", tempo:"3 Sek absinken, explosiv hoch", note:"-"},
+  {name:"Bankdrücken mit Pause", sets:3, reps:"6–8", tempo:"1 Sek Pause auf Brust", note:"-"},
+  {name:"Hanging Leg Raises / Ab Wheel", sets:3, reps:"12–15", tempo:"", note:"-"}
+],
+"Mittwoch":[
+  {name:"Bankdrücken schwer", sets:5, reps:"3–5", tempo:"", note:"-"},
+  {name:"Weighted Pull-Ups / Latzug", sets:4, reps:"5–6", tempo:"", note:"-"},
+  {name:"Schrägbank Kurzhantel / Supersatz mit Rudern", sets:3, reps:"8–10", tempo:"", note:"-"},
+  {name:"Trizeps Kabel / Dips", sets:3, reps:"12", tempo:"", note:"-"},
+  {name:"Bizeps Langhantel / Kurzhantel", sets:3, reps:"12", tempo:"", note:"-"}
+],
+"Freitag":[
+  {name:"Trap Bar / Deadlift", sets:4, reps:"3–5", tempo:"", note:"-"},
+  {name:"Schulterdrücken LH/KH", sets:4, reps:"6–8", tempo:"", note:"-"},
+  {name:"Beinpresse / Hack Squat", sets:3, reps:"10–12", tempo:"Tempo beachten", note:"-"},
+  {name:"Hip Thrusts", sets:3, reps:"8–10", tempo:"", note:"-"}
+]
+};
+
+// Übungen rendern
+function renderExercises(){
+  const day=document.getElementById("day").value;
+  const container=document.getElementById("exercises");
+  container.innerHTML="";
+
+  const lastHistory=JSON.parse(localStorage.getItem(day)) || [];
+  const lastEntry=lastHistory[0]; 
+
+  plan[day].forEach((ex,index)=>{
+    container.innerHTML+=`<div class="card">
+      <div class="exercise-title">${ex.name} <small>${ex.sets}×${ex.reps}</small></div>
+      ${ex.tempo?`<small>Tempo: ${ex.tempo}</small>`:""}
+      ${ex.note?`<small>Hinweis: ${ex.note}</small>`:""}`;
+    for(let i=1;i<=ex.sets;i++){
+      let lastVal = 0;
+      if(lastEntry && lastEntry.exercises[ex.name]) lastVal = lastEntry.exercises[ex.name][i-1] || 0;
+      container.innerHTML+=`Satz ${i}: <input type="number" id="${day}_${index}_r${i}" placeholder="kg" value="${lastVal}" class="satz"> <br>`;
+    }
+    container.innerHTML+="</div>";
+  });
+
+  applyColors(lastEntry);
+  showHistory(day);
+}
+
+// Farben anwenden
+function applyColors(lastEntry){
+  const day=document.getElementById("day").value;
+  plan[day].forEach((ex,index)=>{
+    for(let i=1;i<=ex.sets;i++){
+      const input=document.getElementById(`${day}_${index}_r${i}`);
+      if(!input) continue;
+      const currentVal = parseFloat(input.value) || 0;
+      let lastVal = 0;
+      if(lastEntry && lastEntry.exercises[ex.name]) lastVal = parseFloat(lastEntry.exercises[ex.name][i-1]) || 0;
+      input.classList.remove("gruen","gelb","rot");
+      if(currentVal > lastVal) input.classList.add("gruen");
+      else if(currentVal === lastVal && currentVal !== 0) input.classList.add("gelb");
+      else if(currentVal < lastVal) input.classList.add("rot");
+    }
+  });
+}
+
+// Speichern
+function saveWorkout(){
+  const day=document.getElementById("day").value;
+  const date=new Date().toLocaleString();
+  const data={date:date, exercises:{}};
+  plan[day].forEach((ex,index)=>{
+    const weights=[];
+    for(let i=1;i<=ex.sets;i++){
+      const val=document.getElementById(`${day}_${index}_r${i}`)?.value;
+      weights.push(val||0);
+    }
+    data.exercises[ex.name]=weights;
+  });
+  const history=JSON.parse(localStorage.getItem(day))||[];
+  history.unshift(data);
+  if(history.length>10) history.pop();
+  localStorage.setItem(day,JSON.stringify(history));
+  alert("Training gespeichert!");
+  renderExercises(); 
+}
+
+// Historie anzeigen
+function showHistory(day){
+  const container=document.getElementById("history");
+  container.innerHTML="";
+  const history=JSON.parse(localStorage.getItem(day))||[];
+  if(history.length===0){
+    container.innerHTML="<p>Keine Trainings gespeichert.</p>";
+    return;
+  }
+  history.forEach(entry=>{
+    container.innerHTML+=`<div class="card"><strong>${entry.date}</strong><br>`;
+    Object.keys(entry.exercises).forEach(ex=>{
+      container.innerHTML+=`${ex}: ${entry.exercises.join(", ")} kg<br>`;
+    });
+    container.innerHTML+="</div>";
+  });
+}
+
+// Dropdown Event
+document.getElementById("day").addEventListener("change",()=>renderExercises());
+renderExercises();
+</script>
+
+</body>
+</html>
