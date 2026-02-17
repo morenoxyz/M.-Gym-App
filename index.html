@@ -10,6 +10,7 @@ body { font-family: Arial, sans-serif; background:#121212; color:#FFD700; paddin
 h1, h2 { text-align:center; color:#FFD700; }
 .card { background:#1e1e1e; padding:12px; margin-bottom:10px; border-radius:8px; }
 input { width:60px; padding:4px; margin:3px; border-radius:4px; border:none; }
+textarea { width:100%; padding:4px; border-radius:6px; margin-top:5px; border:none; }
 button { padding:8px 12px; margin-top:10px; background:#FFD700; border:none; color:#121212; font-weight:bold; border-radius:6px; cursor:pointer;}
 button:hover { opacity:0.85; }
 .exercise-title { font-weight:bold; margin-bottom:5px; }
@@ -36,20 +37,24 @@ small { color:#ccc; display:block; margin-bottom:5px; }
 
 <div id="exercises"></div>
 
+<label>Notiz zum Training:</label>
+<textarea id="note" placeholder="z.B. Tempo beachten..."></textarea>
+
 <button onclick="saveWorkout()">Training speichern</button>
 
-<h2>📅 Letzte Trainings</h2>
+<h2>📅 Letztes Training</h2>
 <div id="history"></div>
 
 <script>
-// Trainingsplan
+// Trainingsplan inkl. Waden
 const plan = {
 "Montag":[
   {name:"Back Squat", sets:5, reps:"3–5", tempo:"explosiv hoch, 3 Sek runter", note:"Kraftfokus, progressive Steigerung"},
   {name:"Romanian Deadlift", sets:3, reps:"6–8", tempo:"", note:"-"},
   {name:"Bulgarian Split Squat", sets:3, reps:"8–10", tempo:"3 Sek absinken, explosiv hoch", note:"-"},
   {name:"Bankdrücken mit Pause", sets:3, reps:"6–8", tempo:"1 Sek Pause auf Brust", note:"-"},
-  {name:"Hanging Leg Raises / Ab Wheel", sets:3, reps:"12–15", tempo:"", note:"-"}
+  {name:"Hanging Leg Raises / Ab Wheel", sets:3, reps:"12–15", tempo:"", note:"-"},
+  {name:"Wadenheben (Calf Raises)", sets:3, reps:"15–20", tempo:"Langsam hoch, volle Kontraktion", note:"Sitzend oder stehend möglich"}
 ],
 "Mittwoch":[
   {name:"Bankdrücken schwer", sets:5, reps:"3–5", tempo:"", note:"-"},
@@ -62,7 +67,8 @@ const plan = {
   {name:"Trap Bar / Deadlift", sets:4, reps:"3–5", tempo:"", note:"-"},
   {name:"Schulterdrücken LH/KH", sets:4, reps:"6–8", tempo:"", note:"-"},
   {name:"Beinpresse / Hack Squat", sets:3, reps:"10–12", tempo:"Tempo beachten", note:"-"},
-  {name:"Hip Thrusts", sets:3, reps:"8–10", tempo:"", note:"-"}
+  {name:"Hip Thrusts", sets:3, reps:"8–10", tempo:"", note:"-"},
+  {name:"Wadenheben (Calf Raises)", sets:3, reps:"15–20", tempo:"Langsam hoch, volle Kontraktion", note:"Sitzend oder stehend möglich"}
 ]
 };
 
@@ -87,6 +93,9 @@ function renderExercises(){
     }
     container.innerHTML+="</div>";
   });
+
+  const noteField = document.getElementById("note");
+  noteField.value = lastEntry ? lastEntry.note : "";
 
   applyColors(lastEntry);
   showHistory(day);
@@ -114,7 +123,8 @@ function applyColors(lastEntry){
 function saveWorkout(){
   const day=document.getElementById("day").value;
   const date=new Date().toLocaleString();
-  const data={date:date, exercises:{}};
+  const note=document.getElementById("note").value;
+  const data={date:date, note:note, exercises:{}};
   plan[day].forEach((ex,index)=>{
     const weights=[];
     for(let i=1;i<=ex.sets;i++){
@@ -123,30 +133,26 @@ function saveWorkout(){
     }
     data.exercises[ex.name]=weights;
   });
-  const history=JSON.parse(localStorage.getItem(day))||[];
-  history.unshift(data);
-  if(history.length>10) history.pop();
-  localStorage.setItem(day,JSON.stringify(history));
+  localStorage.setItem(day,JSON.stringify([data])); // nur letztes Training speichern
   alert("Training gespeichert!");
   renderExercises(); 
 }
 
-// Historie anzeigen
+// Letztes Training anzeigen
 function showHistory(day){
   const container=document.getElementById("history");
   container.innerHTML="";
-  const history=JSON.parse(localStorage.getItem(day))||[];
-  if(history.length===0){
+  const lastEntry=JSON.parse(localStorage.getItem(day))?.[0];
+  if(!lastEntry){
     container.innerHTML="<p>Keine Trainings gespeichert.</p>";
     return;
   }
-  history.forEach(entry=>{
-    container.innerHTML+=`<div class="card"><strong>${entry.date}</strong><br>`;
-    Object.keys(entry.exercises).forEach(ex=>{
-      container.innerHTML+=`${ex}: ${entry.exercises.join(", ")} kg<br>`;
-    });
-    container.innerHTML+="</div>";
+  container.innerHTML+=`<div class="card"><strong>${lastEntry.date}</strong><br>`;
+  Object.keys(lastEntry.exercises).forEach(ex=>{
+    container.innerHTML+=`${ex}: ${lastEntry.exercises.join(", ")} kg<br>`;
   });
+  if(lastEntry.note) container.innerHTML+=`<em>Notiz:</em> ${lastEntry.note}`;
+  container.innerHTML+="</div>";
 }
 
 // Dropdown Event
