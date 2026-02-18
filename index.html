@@ -4,30 +4,78 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Moreno‘s Workout App</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🏋️</text></svg>">
+
 <style>
-body { font-family: Arial, sans-serif; background:#121212; color:#FFD700; padding:15px; }
-h1, h2 { text-align:center; color:#FFD700; }
-.card { background:#1e1e1e; padding:12px; margin-bottom:10px; border-radius:8px; }
-input { width:60px; padding:4px; margin:3px; border-radius:4px; border:none; }
-textarea { width:100%; padding:4px; border-radius:6px; margin-top:5px; border:none; }
-button { padding:8px 12px; margin-top:10px; background:#FFD700; border:none; color:#121212; font-weight:bold; border-radius:6px; cursor:pointer;}
-button:hover { opacity:0.85; }
-.exercise-title { font-weight:bold; margin-bottom:5px; }
-small { color:#ccc; display:block; margin-bottom:5px; }
-.day-select { text-align:center; margin-bottom:10px; }
-.satz { display:inline-block; padding:3px 6px; margin:2px; border-radius:4px; min-width:40px; text-align:center;}
-.satz.gruen { background-color: #28a745; color:#fff; }
-.satz.gelb { background-color: #ffc107; color:#000; }
-.satz.rot { background-color: #dc3545; color:#fff; }
+body {
+  font-family: Arial, sans-serif;
+  background:#121212;
+  color:#FFD700;
+  padding:15px;
+}
+
+h1,h2 { text-align:center; }
+
+.card {
+  background:#1e1e1e;
+  padding:12px;
+  margin-bottom:12px;
+  border-radius:8px;
+}
+
+input {
+  width:65px;
+  padding:5px;
+  margin:4px 2px;
+  border-radius:6px;
+  border:none;
+  text-align:center;
+}
+
+textarea {
+  width:100%;
+  padding:6px;
+  border-radius:6px;
+  border:none;
+  margin-top:6px;
+}
+
+button {
+  width:100%;
+  padding:10px;
+  margin-top:15px;
+  background:#FFD700;
+  border:none;
+  color:#121212;
+  font-weight:bold;
+  border-radius:8px;
+}
+
+.exercise-title {
+  font-weight:bold;
+  margin-bottom:4px;
+}
+
+small {
+  color:#bbb;
+  display:block;
+}
+
+.gruen { background:#28a745; color:white; }
+.gelb { background:#ffc107; color:black; }
+.rot { background:#dc3545; color:white; }
+
+select {
+  padding:6px;
+  border-radius:6px;
+}
 </style>
 </head>
+
 <body>
 
 <h1>Moreno‘s Workout App 🏋️</h1>
 
-<div class="day-select">
-<label>Trainingstag: </label>
+<div style="text-align:center; margin-bottom:15px;">
 <select id="day">
 <option value="Montag">Montag</option>
 <option value="Mittwoch">Mittwoch</option>
@@ -37,128 +85,182 @@ small { color:#ccc; display:block; margin-bottom:5px; }
 
 <div id="exercises"></div>
 
-<label>Notiz zum Training:</label>
-<textarea id="note" placeholder="z.B. Tempo beachten..."></textarea>
+<label>Notiz:</label>
+<textarea id="note" placeholder="z.B. schwer heute, Tempo verbessern..."></textarea>
 
 <button onclick="saveWorkout()">Training speichern</button>
 
-<h2>📅 Letztes Training</h2>
+<h2>Letztes Training</h2>
 <div id="history"></div>
 
 <script>
-// Trainingsplan inkl. Waden
+
 const plan = {
+
 "Montag":[
-  {name:"Back Squat", sets:5, reps:"3–5", tempo:"explosiv hoch, 3 Sek runter", note:"Kraftfokus, progressive Steigerung"},
-  {name:"Romanian Deadlift", sets:3, reps:"6–8", tempo:"", note:"-"},
-  {name:"Bulgarian Split Squat", sets:3, reps:"8–10", tempo:"3 Sek absinken, explosiv hoch", note:"-"},
-  {name:"Bankdrücken mit Pause", sets:3, reps:"6–8", tempo:"1 Sek Pause auf Brust", note:"-"},
-  {name:"Hanging Leg Raises / Ab Wheel", sets:3, reps:"12–15", tempo:"", note:"-"},
-  {name:"Wadenheben (Calf Raises)", sets:3, reps:"15–20", tempo:"Langsam hoch, volle Kontraktion", note:"Sitzend oder stehend möglich"}
+{name:"Back Squat", sets:5, reps:"3-5"},
+{name:"Romanian Deadlift", sets:3, reps:"6-8"},
+{name:"Bulgarian Split Squat", sets:3, reps:"8-10"},
+{name:"Bankdrücken mit Pause", sets:3, reps:"6-8"},
+{name:"Hanging Leg Raises", sets:3, reps:"12-15"},
+{name:"Wadenheben", sets:3, reps:"15-20"}
 ],
+
 "Mittwoch":[
-  {name:"Bankdrücken schwer", sets:5, reps:"3–5", tempo:"", note:"-"},
-  {name:"Weighted Pull-Ups / Latzug", sets:4, reps:"5–6", tempo:"", note:"-"},
-  {name:"Schrägbank Kurzhantel / Supersatz mit Rudern", sets:3, reps:"8–10", tempo:"", note:"-"},
-  {name:"Trizeps Kabel / Dips", sets:3, reps:"12", tempo:"", note:"-"},
-  {name:"Bizeps Langhantel / Kurzhantel", sets:3, reps:"12", tempo:"", note:"-"}
+{name:"Bankdrücken schwer", sets:5, reps:"3-5"},
+{name:"Pull-Ups / Latzug", sets:4, reps:"5-6"},
+{name:"Schrägbank + Rudern", sets:3, reps:"8-10"},
+{name:"Trizeps", sets:3, reps:"12"},
+{name:"Bizeps", sets:3, reps:"12"}
 ],
+
 "Freitag":[
-  {name:"Trap Bar / Deadlift", sets:4, reps:"3–5", tempo:"", note:"-"},
-  {name:"Schulterdrücken LH/KH", sets:4, reps:"6–8", tempo:"", note:"-"},
-  {name:"Beinpresse / Hack Squat", sets:3, reps:"10–12", tempo:"Tempo beachten", note:"-"},
-  {name:"Hip Thrusts", sets:3, reps:"8–10", tempo:"", note:"-"},
-  {name:"Wadenheben (Calf Raises)", sets:3, reps:"15–20", tempo:"Langsam hoch, volle Kontraktion", note:"Sitzend oder stehend möglich"}
+{name:"Deadlift / Trap Bar", sets:4, reps:"3-5"},
+{name:"Schulterdrücken", sets:4, reps:"6-8"},
+{name:"Beinpresse", sets:3, reps:"10-12"},
+{name:"Hip Thrust", sets:3, reps:"8-10"},
+{name:"Wadenheben", sets:3, reps:"15-20"}
 ]
+
 };
 
-// Übungen rendern
-function renderExercises(){
-  const day=document.getElementById("day").value;
-  const container=document.getElementById("exercises");
-  container.innerHTML="";
 
-  const lastHistory=JSON.parse(localStorage.getItem(day)) || [];
-  const lastEntry=lastHistory[0]; 
+// Übungen anzeigen
+function render(){
 
-  plan[day].forEach((ex,index)=>{
-    container.innerHTML+=`<div class="card">
-      <div class="exercise-title">${ex.name} <small>${ex.sets}×${ex.reps}</small></div>
-      ${ex.tempo?`<small>Tempo: ${ex.tempo}</small>`:""}
-      ${ex.note?`<small>Hinweis: ${ex.note}</small>`:""}`;
-    for(let i=1;i<=ex.sets;i++){
-      let lastVal = 0;
-      if(lastEntry && lastEntry.exercises[ex.name]) lastVal = lastEntry.exercises[ex.name][i-1] || 0;
-      container.innerHTML+=`Satz ${i}: <input type="number" id="${day}_${index}_r${i}" placeholder="kg" value="${lastVal}" class="satz"> <br>`;
-    }
-    container.innerHTML+="</div>";
-  });
+const day = document.getElementById("day").value;
+const container = document.getElementById("exercises");
+container.innerHTML="";
 
-  const noteField = document.getElementById("note");
-  noteField.value = lastEntry ? lastEntry.note : "";
+const saved = JSON.parse(localStorage.getItem(day)) || null;
 
-  applyColors(lastEntry);
-  showHistory(day);
+plan[day].forEach((ex, i)=>{
+
+container.innerHTML += `<div class="card">
+<div class="exercise-title">${ex.name} <small>${ex.sets} x ${ex.reps}</small></div>`;
+
+for(let s=0; s<ex.sets; s++){
+
+let lastVal = 0;
+if(saved && saved.exercises[ex.name]){
+lastVal = saved.exercises[ex.name][s] || 0;
 }
 
-// Farben anwenden
-function applyColors(lastEntry){
-  const day=document.getElementById("day").value;
-  plan[day].forEach((ex,index)=>{
-    for(let i=1;i<=ex.sets;i++){
-      const input=document.getElementById(`${day}_${index}_r${i}`);
-      if(!input) continue;
-      const currentVal = parseFloat(input.value) || 0;
-      let lastVal = 0;
-      if(lastEntry && lastEntry.exercises[ex.name]) lastVal = parseFloat(lastEntry.exercises[ex.name][i-1]) || 0;
-      input.classList.remove("gruen","gelb","rot");
-      if(currentVal > lastVal) input.classList.add("gruen");
-      else if(currentVal === lastVal && currentVal !== 0) input.classList.add("gelb");
-      else if(currentVal < lastVal) input.classList.add("rot");
-    }
-  });
+container.innerHTML += `
+Satz ${s+1}:
+<input type="number"
+id="${day}_${i}_${s}"
+value="${lastVal}"
+placeholder="kg">
+`;
 }
+
+container.innerHTML += `</div>`;
+});
+
+if(saved){
+document.getElementById("note").value = saved.note || "";
+showHistory(saved);
+}else{
+document.getElementById("note").value="";
+document.getElementById("history").innerHTML="Kein Training gespeichert.";
+}
+
+applyColors();
+}
+
+
+// Farben vergleichen
+function applyColors(){
+
+const day = document.getElementById("day").value;
+const saved = JSON.parse(localStorage.getItem(day)) || null;
+
+if(!saved) return;
+
+plan[day].forEach((ex,i)=>{
+
+for(let s=0; s<ex.sets; s++){
+
+const input = document.getElementById(`${day}_${i}_${s}`);
+if(!input) continue;
+
+const current = parseFloat(input.value) || 0;
+const last = saved.exercises[ex.name]?.[s] || 0;
+
+input.classList.remove("gruen","gelb","rot");
+
+if(current > last) input.classList.add("gruen");
+else if(current === last && current !== 0) input.classList.add("gelb");
+else if(current < last) input.classList.add("rot");
+
+}
+
+});
+
+}
+
 
 // Speichern
 function saveWorkout(){
-  const day=document.getElementById("day").value;
-  const date=new Date().toLocaleString();
-  const note=document.getElementById("note").value;
-  const data={date:date, note:note, exercises:{}};
-  plan[day].forEach((ex,index)=>{
-    const weights=[];
-    for(let i=1;i<=ex.sets;i++){
-      const val=document.getElementById(`${day}_${index}_r${i}`)?.value;
-      weights.push(val||0);
-    }
-    data.exercises[ex.name]=weights;
-  });
-  localStorage.setItem(day,JSON.stringify([data])); // nur letztes Training speichern
-  alert("Training gespeichert!");
-  renderExercises(); 
+
+const day = document.getElementById("day").value;
+
+const data = {
+date: new Date().toLocaleString(),
+note: document.getElementById("note").value,
+exercises:{}
+};
+
+plan[day].forEach((ex,i)=>{
+
+let weights=[];
+
+for(let s=0; s<ex.sets; s++){
+
+const val = document.getElementById(`${day}_${i}_${s}`).value;
+weights.push(parseFloat(val) || 0);
+
 }
+
+data.exercises[ex.name] = weights;
+
+});
+
+localStorage.setItem(day, JSON.stringify(data));
+
+alert("Gespeichert ✔");
+
+render();
+
+}
+
 
 // Letztes Training anzeigen
-function showHistory(day){
-  const container=document.getElementById("history");
-  container.innerHTML="";
-  const lastEntry=JSON.parse(localStorage.getItem(day))?.[0];
-  if(!lastEntry){
-    container.innerHTML="<p>Keine Trainings gespeichert.</p>";
-    return;
-  }
-  container.innerHTML+=`<div class="card"><strong>${lastEntry.date}</strong><br>`;
-  Object.keys(lastEntry.exercises).forEach(ex=>{
-    container.innerHTML+=`${ex}: ${lastEntry.exercises.join(", ")} kg<br>`;
-  });
-  if(lastEntry.note) container.innerHTML+=`<em>Notiz:</em> ${lastEntry.note}`;
-  container.innerHTML+="</div>";
+function showHistory(entry){
+
+let html = `<div class="card"><strong>${entry.date}</strong><br>`;
+
+for(const ex in entry.exercises){
+html += `${ex}: ${entry.exercises[ex].join(", ")} kg<br>`;
 }
 
-// Dropdown Event
-document.getElementById("day").addEventListener("change",()=>renderExercises());
-renderExercises();
-</script>
+if(entry.note){
+html += `<br><em>Notiz:</em> ${entry.note}`;
+}
 
+html += "</div>";
+
+document.getElementById("history").innerHTML = html;
+
+}
+
+
+// Wechsel Tag
+document.getElementById("day").addEventListener("change", render);
+
+render();
+
+</script>
 </body>
 </html>
