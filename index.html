@@ -4,89 +4,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Moreno‘s Workout App</title>
-
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background:#121212;
-  color:#FFD700;
-  padding:15px;
-}
-
-h1,h2 { text-align:center; }
-
-.card {
-  background:#1e1e1e;
-  padding:12px;
-  margin-bottom:12px;
-  border-radius:8px;
-}
-
-input {
-  width:65px;
-  padding:5px;
-  margin:4px 2px;
-  border-radius:6px;
-  border:none;
-  text-align:center;
-}
-
-textarea {
-  width:100%;
-  padding:6px;
-  border-radius:6px;
-  border:none;
-  margin-top:6px;
-}
-
-button {
-  width:100%;
-  padding:10px;
-  margin-top:15px;
-  background:#FFD700;
-  border:none;
-  color:#121212;
-  font-weight:bold;
-  border-radius:8px;
-}
-
-.exercise-title {
-  font-weight:bold;
-  margin-bottom:4px;
-}
-
-small {
-  color:#bbb;
-  display:block;
-}
-
+body { font-family: Arial,sans-serif; background:#121212; color:#FFD700; padding:15px; }
+h1,h2{text-align:center;}
+.card { background:#1e1e1e; padding:12px; margin-bottom:10px; border-radius:8px; }
+input { width:65px; padding:5px; margin:3px; border-radius:6px; border:none; text-align:center; }
+textarea { width:100%; padding:6px; margin-top:6px; border-radius:6px; border:none; }
+button { width:100%; padding:10px; margin-top:10px; background:#FFD700; border:none; color:#121212; font-weight:bold; border-radius:6px; cursor:pointer; }
+.exercise-title { font-weight:bold; margin-bottom:4px; }
+small { color:#bbb; display:block; }
 .gruen { background:#28a745; color:white; }
 .gelb { background:#ffc107; color:black; }
 .rot { background:#dc3545; color:white; }
-
-select {
-  padding:6px;
-  border-radius:6px;
-}
+select { padding:6px; border-radius:6px; margin-bottom:12px;}
 </style>
 </head>
-
 <body>
 
 <h1>Moreno‘s Workout App 🏋️</h1>
 
-<div style="text-align:center; margin-bottom:15px;">
+<div style="text-align:center;">
+<label>Trainingstag: </label>
 <select id="day">
-<option value="Montag">Montag</option>
-<option value="Mittwoch">Mittwoch</option>
-<option value="Freitag">Freitag</option>
+  <option value="Montag">Montag</option>
+  <option value="Mittwoch">Mittwoch</option>
+  <option value="Freitag">Freitag</option>
 </select>
 </div>
 
 <div id="exercises"></div>
 
 <label>Notiz:</label>
-<textarea id="note" placeholder="z.B. schwer heute, Tempo verbessern..."></textarea>
+<textarea id="note" placeholder="z.B. Tempo beachten..."></textarea>
 
 <button onclick="saveWorkout()">Training speichern</button>
 
@@ -94,9 +43,8 @@ select {
 <div id="history"></div>
 
 <script>
-
+// Trainingsplan
 const plan = {
-
 "Montag":[
 {name:"Back Squat", sets:5, reps:"3-5"},
 {name:"Romanian Deadlift", sets:3, reps:"6-8"},
@@ -105,7 +53,6 @@ const plan = {
 {name:"Hanging Leg Raises", sets:3, reps:"12-15"},
 {name:"Wadenheben", sets:3, reps:"15-20"}
 ],
-
 "Mittwoch":[
 {name:"Bankdrücken schwer", sets:5, reps:"3-5"},
 {name:"Pull-Ups / Latzug", sets:4, reps:"5-6"},
@@ -113,7 +60,6 @@ const plan = {
 {name:"Trizeps", sets:3, reps:"12"},
 {name:"Bizeps", sets:3, reps:"12"}
 ],
-
 "Freitag":[
 {name:"Deadlift / Trap Bar", sets:4, reps:"3-5"},
 {name:"Schulterdrücken", sets:4, reps:"6-8"},
@@ -121,144 +67,87 @@ const plan = {
 {name:"Hip Thrust", sets:3, reps:"8-10"},
 {name:"Wadenheben", sets:3, reps:"15-20"}
 ]
-
 };
 
-
-// Übungen anzeigen
+// Übungen rendern
 function render(){
+  const day = document.getElementById("day").value;
+  const container = document.getElementById("exercises");
+  container.innerHTML="";
 
-const day = document.getElementById("day").value;
-const container = document.getElementById("exercises");
-container.innerHTML="";
+  const saved = JSON.parse(localStorage.getItem(day)) || null;
 
-const saved = JSON.parse(localStorage.getItem(day)) || null;
+  plan[day].forEach((ex,i)=>{
+    container.innerHTML += `<div class="card">
+      <div class="exercise-title">${ex.name} <small>${ex.sets} x ${ex.reps}</small></div>`;
+    for(let s=0;s<ex.sets;s++){
+      let lastVal = 0;
+      if(saved && saved.exercises[ex.name]){
+        lastVal = saved.exercises[ex.name][s] || 0;
+      }
+      container.innerHTML += `Satz ${s+1}: <input type="number" id="${day}_${i}_${s}" placeholder="kg" value="${lastVal}"><br>`;
+    }
+    container.innerHTML += `</div>`;
+  });
 
-plan[day].forEach((ex, i)=>{
-
-container.innerHTML += `<div class="card">
-<div class="exercise-title">${ex.name} <small>${ex.sets} x ${ex.reps}</small></div>`;
-
-for(let s=0; s<ex.sets; s++){
-
-let lastVal = 0;
-if(saved && saved.exercises[ex.name]){
-lastVal = saved.exercises[ex.name][s] || 0;
+  document.getElementById("note").value = saved ? saved.note : "";
+  showHistory(day);
+  applyColors(day);
 }
 
-container.innerHTML += `
-Satz ${s+1}:
-<input type="number"
-id="${day}_${i}_${s}"
-value="${lastVal}"
-placeholder="kg">
-`;
+// Farben für Fortschritt
+function applyColors(day){
+  const saved = JSON.parse(localStorage.getItem(day)) || null;
+  if(!saved) return;
+  plan[day].forEach((ex,i)=>{
+    for(let s=0;s<ex.sets;s++){
+      const input = document.getElementById(`${day}_${i}_${s}`);
+      if(!input) continue;
+      const current = parseFloat(input.value)||0;
+      const last = saved.exercises[ex.name]?.[s] || 0;
+      input.classList.remove("gruen","gelb","rot");
+      if(current>last) input.classList.add("gruen");
+      else if(current===last && current!==0) input.classList.add("gelb");
+      else if(current<last) input.classList.add("rot");
+    }
+  });
 }
-
-container.innerHTML += `</div>`;
-});
-
-if(saved){
-document.getElementById("note").value = saved.note || "";
-showHistory(saved);
-}else{
-document.getElementById("note").value="";
-document.getElementById("history").innerHTML="Kein Training gespeichert.";
-}
-
-applyColors();
-}
-
-
-// Farben vergleichen
-function applyColors(){
-
-const day = document.getElementById("day").value;
-const saved = JSON.parse(localStorage.getItem(day)) || null;
-
-if(!saved) return;
-
-plan[day].forEach((ex,i)=>{
-
-for(let s=0; s<ex.sets; s++){
-
-const input = document.getElementById(`${day}_${i}_${s}`);
-if(!input) continue;
-
-const current = parseFloat(input.value) || 0;
-const last = saved.exercises[ex.name]?.[s] || 0;
-
-input.classList.remove("gruen","gelb","rot");
-
-if(current > last) input.classList.add("gruen");
-else if(current === last && current !== 0) input.classList.add("gelb");
-else if(current < last) input.classList.add("rot");
-
-}
-
-});
-
-}
-
 
 // Speichern
 function saveWorkout(){
-
-const day = document.getElementById("day").value;
-
-const data = {
-date: new Date().toLocaleString(),
-note: document.getElementById("note").value,
-exercises:{}
-};
-
-plan[day].forEach((ex,i)=>{
-
-let weights=[];
-
-for(let s=0; s<ex.sets; s++){
-
-const val = document.getElementById(`${day}_${i}_${s}`).value;
-weights.push(parseFloat(val) || 0);
-
+  const day = document.getElementById("day").value;
+  const data = { date: new Date().toLocaleString(), note:document.getElementById("note").value, exercises:{} };
+  plan[day].forEach((ex,i)=>{
+    let weights = [];
+    for(let s=0;s<ex.sets;s++){
+      const val = document.getElementById(`${day}_${i}_${s}`).value;
+      weights.push(parseFloat(val)||0);
+    }
+    data.exercises[ex.name] = weights;
+  });
+  localStorage.setItem(day, JSON.stringify(data));
+  alert("Training gespeichert ✔");
+  render();
 }
-
-data.exercises[ex.name] = weights;
-
-});
-
-localStorage.setItem(day, JSON.stringify(data));
-
-alert("Gespeichert ✔");
-
-render();
-
-}
-
 
 // Letztes Training anzeigen
-function showHistory(entry){
-
-let html = `<div class="card"><strong>${entry.date}</strong><br>`;
-
-for(const ex in entry.exercises){
-html += `${ex}: ${entry.exercises[ex].join(", ")} kg<br>`;
+function showHistory(day){
+  const container = document.getElementById("history");
+  const saved = JSON.parse(localStorage.getItem(day));
+  if(!saved){ container.innerHTML="Kein Training gespeichert."; return; }
+  let html = `<div class="card"><strong>${saved.date}</strong><br>`;
+  for(const ex in saved.exercises){
+    html += `${ex}: ${saved.exercises[ex].join(", ")} kg<br>`;
+  }
+  if(saved.note) html += `<br><em>Notiz:</em> ${saved.note}`;
+  html += "</div>";
+  container.innerHTML = html;
 }
 
-if(entry.note){
-html += `<br><em>Notiz:</em> ${entry.note}`;
-}
-
-html += "</div>";
-
-document.getElementById("history").innerHTML = html;
-
-}
-
-
-// Wechsel Tag
+// Dropdown Event
 document.getElementById("day").addEventListener("change", render);
 
+// Initial render
 render();
 
 </script>
