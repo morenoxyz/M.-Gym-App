@@ -11,6 +11,7 @@ h1,h2{text-align:center;}
 input { width:65px; padding:5px; margin:3px; border-radius:6px; border:none; text-align:center; }
 textarea { width:100%; padding:6px; margin-top:6px; border-radius:6px; border:none; }
 button { width:100%; padding:10px; margin-top:10px; background:#FFD700; border:none; color:#121212; font-weight:bold; border-radius:6px; cursor:pointer; }
+.reset-button { background:#dc3545; color:white; }
 .exercise-title { font-weight:bold; margin-bottom:4px; }
 small { color:#bbb; display:block; }
 .gruen { background:#28a745; color:white; }
@@ -38,6 +39,7 @@ select { padding:6px; border-radius:6px; margin-bottom:12px;}
 <textarea id="note" placeholder="z.B. Tempo beachten..."></textarea>
 
 <button onclick="saveWorkout()">Training speichern</button>
+<button class="reset-button" onclick="resetAllData()">Alle Daten zurücksetzen</button>
 
 <h2>Letztes Training</h2>
 <div id="history"></div>
@@ -46,26 +48,28 @@ select { padding:6px; border-radius:6px; margin-bottom:12px;}
 // Trainingsplan
 const plan = {
 "Montag":[
-{name:"Back Squat", sets:5, reps:"3-5"},
-{name:"Romanian Deadlift", sets:3, reps:"6-8"},
-{name:"Bulgarian Split Squat", sets:3, reps:"8-10"},
-{name:"Bankdrücken mit Pause", sets:3, reps:"6-8"},
-{name:"Hanging Leg Raises", sets:3, reps:"12-15"},
-{name:"Wadenheben", sets:3, reps:"15-20"}
+{name:"Back Squat", sets:5, reps:"3-5", info:"Kraftfokus, progressive Steigerung"},
+{name:"Romanian Deadlift", sets:3, reps:"6-8", info:"Hamstrings, kontrolliertes Tempo"},
+{name:"Bulgarian Split Squat", sets:3, reps:"8-10", info:"3 Sek absinken, explosiv hoch"},
+{name:"Bankdrücken mit Pause", sets:3, reps:"6-8", info:"1 Sek Pause auf Brust"},
+{name:"Hanging Leg Raises", sets:3, reps:"12-15", info:"Bauchmuskeln, kontrolliert"},
+{name:"Wadenheben", sets:3, reps:"15-20", info:"Stehend, langsam oben halten"}
 ],
 "Mittwoch":[
-{name:"Bankdrücken schwer", sets:5, reps:"3-5"},
-{name:"Pull-Ups / Latzug", sets:4, reps:"5-6"},
-{name:"Schrägbank + Rudern", sets:3, reps:"8-10"},
-{name:"Trizeps", sets:3, reps:"12"},
-{name:"Bizeps", sets:3, reps:"12"}
+{name:"Bankdrücken schwer", sets:5, reps:"3-5", info:"Kraftfokus"},
+{name:"Pull-Ups / Latzug", sets:4, reps:"5-6", info:"Breiter Griff"},
+{name:"Schrägbank + Rudern", sets:3, reps:"8-10", info:"Supersatz"},
+{name:"Trizeps", sets:3, reps:"12", info:"Kabel oder Dips"},
+{name:"Bizeps", sets:3, reps:"12", info:"Langhantel oder Kurzhantel"},
+{name:"Face Pulls / Seitheben", sets:2, reps:"15", info:"Drop Set für Schulter, Hinterkopf"}
 ],
 "Freitag":[
-{name:"Deadlift / Trap Bar", sets:4, reps:"3-5"},
-{name:"Schulterdrücken", sets:4, reps:"6-8"},
-{name:"Beinpresse", sets:3, reps:"10-12"},
-{name:"Hip Thrust", sets:3, reps:"8-10"},
-{name:"Wadenheben", sets:3, reps:"15-20"}
+{name:"Deadlift / Trap Bar", sets:4, reps:"3-5", info:"Kraftfokus"},
+{name:"Schulterdrücken", sets:4, reps:"6-8", info:"Langhantel oder Kurzhantel"},
+{name:"Latzug neutral / Klimmzüge", sets:3, reps:"8-10", info:"Rückenbreite"},
+{name:"Beinpresse / Hack Squat", sets:3, reps:"10-12", info:"Tempo kontrolliert"},
+{name:"Hip Thrust", sets:3, reps:"8-10", info:"Glutes Fokus"},
+{name:"Wadenheben", sets:3, reps:"15-20", info:"Langsam halten oben"}
 ]
 };
 
@@ -79,13 +83,13 @@ function render(){
 
   plan[day].forEach((ex,i)=>{
     container.innerHTML += `<div class="card">
-      <div class="exercise-title">${ex.name} <small>${ex.sets} x ${ex.reps}</small></div>`;
+      <div class="exercise-title">${ex.name} <small>${ex.sets} x ${ex.reps} | ${ex.info}</small></div>`;
     for(let s=0;s<ex.sets;s++){
       let lastVal = 0;
       if(saved && saved.exercises[ex.name]){
         lastVal = saved.exercises[ex.name][s] || 0;
       }
-      container.innerHTML += `Satz ${s+1}: <input type="number" id="${day}_${i}_${s}" placeholder="kg" value="${lastVal}"><br>`;
+      container.innerHTML += `Satz ${s+1}: <input type="text" id="${day}_${i}_${s}" placeholder="${lastVal ? lastVal+' kg' : 'kg'}" value="${lastVal || ''}"><br>`;
     }
     container.innerHTML += `</div>`;
   });
@@ -103,7 +107,8 @@ function applyColors(day){
     for(let s=0;s<ex.sets;s++){
       const input = document.getElementById(`${day}_${i}_${s}`);
       if(!input) continue;
-      const current = parseFloat(input.value)||0;
+      let val = input.value.replace(",",".").replace("/",".");  // Komma oder / in Punkt
+      const current = parseFloat(val)||0;
       const last = saved.exercises[ex.name]?.[s] || 0;
       input.classList.remove("gruen","gelb","rot");
       if(current>last) input.classList.add("gruen");
@@ -120,7 +125,8 @@ function saveWorkout(){
   plan[day].forEach((ex,i)=>{
     let weights = [];
     for(let s=0;s<ex.sets;s++){
-      const val = document.getElementById(`${day}_${i}_${s}`).value;
+      let val = document.getElementById(`${day}_${i}_${s}`).value;
+      val = val.replace(",",".").replace("/","."); // Komma oder / in Punkt
       weights.push(parseFloat(val)||0);
     }
     data.exercises[ex.name] = weights;
@@ -144,12 +150,20 @@ function showHistory(day){
   container.innerHTML = html;
 }
 
+// Reset-Button Funktion
+function resetAllData(){
+  if(confirm("Alle Trainingsdaten wirklich löschen?")){
+    localStorage.clear();
+    alert("Alle Daten wurden gelöscht ✔");
+    render();
+  }
+}
+
 // Dropdown Event
 document.getElementById("day").addEventListener("change", render);
 
 // Initial render
 render();
-
 </script>
 </body>
 </html>
